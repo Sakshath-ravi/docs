@@ -1,0 +1,376 @@
+Good, Section B is **pure command literacy**, not thinking.
+If you hesitate here, it’s because you haven’t memorized the **canonical patterns**. We’ll fix that **cleanly and compactly**.
+
+I’ll give you **exam-ready answers**, exactly how you should write them.
+No fluff. No explanations unless they earn marks.
+
+---
+
+# ✅ SECTION B — MASTER ANSWERS (ALL VARIANTS)
+
+---
+
+## **2(a) HDFS Shell Commands (10 marks)**
+
+### **Paper Variant 1**
+
+1️⃣ **Remove file `olddata.csv`**
+
+```bash
+hdfs dfs -rm /user/hadoop/backup/olddata.csv
+```
+
+2️⃣ **Create nested directory**
+
+```bash
+hdfs dfs -mkdir -p /user/hadoop/project/data
+```
+
+3️⃣ **Display first 10 lines**
+
+```bash
+hdfs dfs -head /user/hadoop/reports/report.txt
+```
+
+4️⃣ **Recursively copy local Logs/**
+
+```bash
+hdfs dfs -put -f Logs /user/hadoop/logs_backup
+```
+
+5️⃣ **Check disk usage**
+
+```bash
+hdfs dfs -du -h /user/hadoop/data
+```
+
+---
+
+### **Paper Variant 2**
+
+1️⃣ **Create InputDir**
+
+```bash
+hdfs dfs -mkdir /user/hadoop/InputDir
+```
+
+2️⃣ **List with size + timestamp**
+
+```bash
+hdfs dfs -ls -h SampleDir
+```
+
+3️⃣ **Upload all .txt files**
+
+```bash
+hdfs dfs -put XYZ/*.txt /user/hadoop/InputDir
+```
+
+4️⃣ **Browse file interactively**
+
+```bash
+hdfs dfs -cat file.txt | less
+```
+
+5️⃣ **Move directory**
+
+```bash
+hdfs dfs -mv OutputDir ArchiveDir
+```
+
+---
+
+### **Paper Variant 3**
+
+1️⃣ **Copy & rename**
+
+```bash
+hdfs dfs -cp InputDir/file1.txt OutputDir/file2.txt
+```
+
+2️⃣ **Delete empty directory**
+
+```bash
+hdfs dfs -rmdir XYZ
+```
+
+3️⃣ **List directory**
+
+```bash
+hdfs dfs -ls SampleDir
+```
+
+4️⃣ **Recursive listing**
+
+```bash
+hdfs dfs -ls -R SampleDir
+```
+
+5️⃣ **Change permission (read-only)**
+
+```bash
+hdfs dfs -chmod 444 file.txt
+```
+
+---
+
+## **2(b) Spark Commands (RDD + PySpark) — 10 marks**
+
+### **Paper Variant 1**
+
+1️⃣ **Create KV RDD + groupByKey**
+
+```python
+rdd = sc.parallelize([("math",85),("science",90),("math",75),("english",70)])
+rdd.groupByKey().collect()
+```
+
+2️⃣ **Extract words & remove duplicates**
+
+```python
+rdd.flatMap(lambda x: x.split()).distinct()
+```
+
+3️⃣ **Sum of integers**
+
+```python
+rdd.reduce(lambda a,b: a+b)
+```
+
+4️⃣ **Read JSON → filter salary > 50000**
+
+```python
+df = spark.read.json("data.json")
+df.select("name","salary").filter(df.salary > 50000).count()
+```
+
+---
+
+### **Paper Variant 2**
+
+1️⃣ **Create RDD from strings**
+
+```python
+rdd = sc.parallelize(["apple","banana","orange","grape"])
+```
+
+2️⃣ **Count elements**
+
+```python
+rdd.count()
+```
+
+3️⃣ **Filter even numbers**
+
+```python
+rdd.filter(lambda x: x % 2 == 0)
+```
+
+4️⃣ **Count lines with "error"**
+
+```python
+sc.textFile("file.txt").filter(lambda x: "error" in x).count()
+```
+
+---
+
+### **Paper Variant 3**
+
+1️⃣ **Create RDD**
+
+```python
+rdd = sc.parallelize([1,2,3,4,5,6])
+```
+
+2️⃣ **Read text file**
+
+```python
+rdd = sc.textFile("/path/to/file.txt")
+```
+
+3️⃣ **Filter even**
+
+```python
+rdd.filter(lambda x: x % 2 == 0)
+```
+
+4️⃣ **Square elements**
+
+```python
+rdd.map(lambda x: x*x)
+```
+
+5️⃣ **Count elements**
+
+```python
+rdd.count()
+```
+
+---
+
+## **2(c) Hive Queries (10 marks)**
+
+### **Partitioned / External Tables**
+
+1️⃣ **Create partitioned external table**
+
+```sql
+CREATE EXTERNAL TABLE analytics_db.sales_data (
+  sale_id INT,
+  item STRING,
+  amount DOUBLE,
+  sale_date STRING
+)
+PARTITIONED BY (region STRING)
+LOCATION '/user/hive/warehouse/sales_data';
+```
+
+2️⃣ **Right outer join**
+
+```sql
+SELECT *
+FROM orders o
+RIGHT OUTER JOIN customers c
+ON o.customer_id = c.customer_id
+WHERE o.amount > 500;
+```
+
+3️⃣ **Second highest salary**
+
+```sql
+SELECT MAX(salary)
+FROM employee_details
+WHERE salary < (SELECT MAX(salary) FROM employee_details);
+```
+
+---
+
+### **Other Hive Variants**
+
+**External table**
+
+```sql
+CREATE EXTERNAL TABLE sales_db.products (
+ product_id INT,
+ product_name STRING,
+ category STRING,
+ price FLOAT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LOCATION '/user/hive/products';
+```
+
+**Left outer join**
+
+```sql
+SELECT *
+FROM employees e
+LEFT OUTER JOIN departments d
+ON e.dept_id = d.dept_id;
+```
+
+**Top 5 salaries**
+
+```sql
+SELECT *
+FROM employee_details
+ORDER BY salary DESC
+LIMIT 5;
+```
+
+---
+
+### **Database + Load Data**
+
+```sql
+CREATE DATABASE anotherDB;
+
+CREATE EXTERNAL TABLE anotherDB.orders1 (
+ order_id INT,
+ order_date STRING,
+ order_customer_id INT,
+ order_status STRING
+);
+
+LOAD DATA LOCAL INPATH '/local/path/orders.csv'
+INTO TABLE anotherDB.orders1;
+```
+
+---
+
+## **2(d) MongoDB Commands (10 marks)**
+
+### **Product Inventory Variant**
+
+1️⃣ **Insert 4 documents**
+
+```js
+db.product_inventory.insertMany([
+ {product_name:"TV",category:"Electronics",price:45000,stock_quantity:30},
+ {product_name:"Phone",category:"Electronics",price:15000,stock_quantity:50},
+ {product_name:"Mouse",category:"Accessories",price:800,stock_quantity:40},
+ {product_name:"Keyboard",category:"Accessories",price:1200,stock_quantity:20}
+])
+```
+
+2️⃣ **Find Electronics > 10000**
+
+```js
+db.product_inventory.find({category:"Electronics",price:{$gt:10000}})
+```
+
+3️⃣ **Reduce stock by 10**
+
+```js
+db.product_inventory.updateMany(
+ {category:"Accessories"},
+ {$inc:{stock_quantity:-10}}
+)
+```
+
+4️⃣ **Delete low stock**
+
+```js
+db.product_inventory.deleteMany({stock_quantity:{$lt:15}})
+```
+
+---
+
+### **Customer Variant**
+
+```js
+db.createCollection("customer_data")
+
+db.customer_data.insertMany([
+ {name:"Amit",email:"a@gmail.com",city:"Delhi"},
+ {name:"John",email:"j@gmail.com",city:"Bombay"},
+ {name:"Ravi",email:"r@gmail.com",city:"Delhi"},
+ {name:"Neha",email:"n@gmail.com",city:"Mumbai"}
+])
+
+db.customer_data.find({city:"Delhi"})
+
+db.customer_data.updateMany(
+ {city:"Bombay"},
+ {$set:{city:"Mumbai"}}
+)
+
+db.customer_data.deleteMany({name:"John"})
+```
+
+---
+
+### **Orders Variant**
+
+```js
+db.createCollection("orders")
+
+db.orders.insertMany([
+ {order_id:1,order_customer_id:11599,order_status:"CLOSED"},
+ {order_id:2,order_customer_id:11698,order_status:"OPEN"}
+])
+
+db.orders.find({order_status:"COMPLETE"})
+
+
