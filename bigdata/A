@@ -974,5 +974,370 @@ JavaScript
 db.users.find({ age: { $gte: 34 } })
 
 
+--------------------------------------------------
 
+from pyspark.sql import SparkSession
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.classification import LogisticRegression
+from pyspark.ml import Pipeline
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+
+
+# Spark session
+spark = SparkSession.builder.appName("SparkML").getOrCreate()
+
+# Load data
+df = spark.read.option("header", "true").option("inferSchema", "true").csv("bank_data.csv")
+
+# String columns
+string_cols = ["job", "marital", "education", "loan", "deposit"]
+
+# StringIndexers (IMPORTANT FIX)
+indexers = [
+ StringIndexer(
+ inputCol=col,
+ outputCol=col + "_index",
+ handleInvalid="keep"
+ )
+ for col in string_cols
+]
+
+
+# Feature columns
+feature_cols = [
+ "age",
+ "balance",
+ "job_index",
+ "marital_index",
+ "education_index",
+ "loan_index"
+]
+
+     
+
+# VectorAssembler
+assembler = VectorAssembler(
+ inputCols=feature_cols,
+ outputCol="features"
+)
+
+
+# Logistic Regression model
+lr = LogisticRegression(
+ featuresCol="features",
+ labelCol="deposit_index"
+)
+
+
+# Pipeline
+pipeline = Pipeline(stages=indexers + [assembler, lr])
+
+
+# Train-test split
+train_data, test_data = df.randomSplit([0.75, 0.25], seed=42)
+
+
+# Train model
+model = pipeline.fit(train_data)
+
+
+# Predictions
+predictions = model.transform(test_data)
+
+
+# Evaluation
+evaluator = MulticlassClassificationEvaluator(
+ labelCol="deposit_index",
+ predictionCol="prediction",
+ metricName="accuracy"
+)
+accuracy = evaluator.evaluate(predictions)
+print("Accuracy:", accuracy)
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import min, max, avg
+# 1️⃣ Create Spark Session
+spark = SparkSession.builder.appName("SectionC_PartA").getOrCreate()
+# 2️⃣ Load Dataset
+df = spark.read.option("header", "true").option("inferSchema", "true").csv("bank_data.csv")
+# Verify data
+df.show()
+df.printSchema()
+# ---------------------------------------
+# Q1. Minimum, Maximum, Average balance
+# ---------------------------------------
+df.select(min("balance").alias("min_balance"), max("balance").alias("max_balance"), avg("balance").alias("avg_balance")).show()
+# ---------------------------------------
+# Q2. Job type with highest number of people
+# ---------------------------------------
+df.groupBy("job").count().orderBy("count", ascending=False).show()
+# Only top job
+df.groupBy("job").count().orderBy("count", ascending=False).limit(1).show()
+# ---------------------------------------
+# Q3. Count people aged over 60 AND having a loan
+# ---------------------------------------
+df.filter((df.age > 60) & (df.loan == "yes")).count()
+# ---------------------------------------
+# Q4. Count deposits ('yes') by education level
+# ---------------------------------------
+df.filter(df.deposit == "yes").groupBy("education").count().show()
+# ---------------------------------------
+# Q5. Deposit count ('yes' vs 'no') for each marital status
+# ---------------------------------------
+df.groupBy("marital", "deposit").count().show()
+# ---------------------------------------
+# Q6. Remove all rows containing ANY null values
+# ---------------------------------------
+df_clean = df.dropna()
+df_clean.show()
+# ---------------------------------------
+# EDGE CASE 1: Balance greater than 1000
+# ---------------------------------------
+df.filter(df.balance > 1000).count()
+# PySpark OPERATIONS 1 (commented out as it's not valid code)
+# ---------------------------------------
+# EDGE CASE 2: Married AND deposit yes
+# ---------------------------------------
+df.filter((df.marital == "married") & (df.deposit == "yes")).count()
+# ---------------------------------------
+# EDGE CASE 3: Count loans per job
+# ---------------------------------------
+df.filter(df.loan == "yes").groupBy("job").count().show()
+# ---------------------------------------
+# EDGE CASE 4: Spark SQL version
+# ---------------------------------------
+df.createOrReplaceTempView("bank")
+spark.sql("SELECT education, COUNT(*) AS cnt FROM bank WHERE deposit = 'yes' GROUP BY education").show()
+# ---------------------------------------
+# EDGE CASE 5: Drop column + remove nulls
+# ---------------------------------------
+df.drop("education").dropna().show()
+
+
+------------
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import min, max, avg, col
+
+spark = SparkSession.builder.appName("Startups_PartA").getOrCreate()
+
+df = spark.read.option("header", "true") \
+               .option("inferSchema", "true") \
+               .csv("50_Startups.csv")
+
+df.show()
+df.printSchema()
+
+
+df.select(
+    min("Profit").alias("min_profit"),
+    max("Profit").alias("max_profit"),
+    avg("Profit").alias("avg_profit")
+).show()
+
+df.groupBy("State") \
+  .count() \
+  .orderBy(col("count").desc()) \
+  .limit(1) \
+  .show()
+
+
+df.filter(col("State") == "Florida") \
+  .select(avg("Administration").alias("avg_admin_cost")) \
+  .show()
+
+
+df.filter(col("State") == "California").count()
+
+df.filter(
+    (col("Profit") > 100000) & (col("Marketing Spend") < 50000)
+).count()
+
+df_clean = df.drop("sl_no").dropna()
+df_clean.show()
+
+
+from pyspark.sql.types import StringType
+
+string_cols = [
+    f.name for f in df_clean.schema.fields
+    if isinstance(f.dataType, StringType)
+]
+
+["State"]
+
+
+from pyspark.ml.feature import StringIndexer
+
+indexers = [
+    StringIndexer(
+        inputCol=col,
+        outputCol=col + "_index",
+        handleInvalid="keep"
+    )
+    for col in string_cols
+]
+
+from pyspark.ml.feature import VectorAssembler
+
+feature_cols = [
+    c for c in df_clean.columns
+    if c not in ["Profit"] + string_cols
+] + [c + "_index" for c in string_cols]
+
+assembler = VectorAssembler(
+    inputCols=feature_cols,
+    outputCol="features"
+)
+
+
+train_data, test_data = df_clean.randomSplit([0.75, 0.25], seed=42)
+
+from pyspark.ml.regression import LinearRegression
+
+lr = LinearRegression(
+    featuresCol="features",
+    labelCol="Profit"
+)
+
+from pyspark.ml import Pipeline
+
+pipeline = Pipeline(stages=indexers + [assembler, lr])
+
+model = pipeline.fit(train_data)
+
+predictions = model.transform(test_data)
+predictions.select("features", "Profit", "prediction").show()
+
+from pyspark.ml.evaluation import RegressionEvaluator
+
+mse_evaluator = RegressionEvaluator(
+    labelCol="Profit",
+    predictionCol="prediction",
+    metricName="mse"
+)
+
+rmse_evaluator = RegressionEvaluator(
+    labelCol="Profit",
+    predictionCol="prediction",
+    metricName="rmse"
+)
+
+mse = mse_evaluator.evaluate(predictions)
+rmse = rmse_evaluator.evaluate(predictions)
+
+print("MSE:", mse)
+print("RMSE:", rmse)
+
+
+
+-------------------
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, avg
+
+spark = SparkSession.builder.appName("QS_PartA").getOrCreate()
+
+df = spark.read.option("header", "true") \
+               .option("inferSchema", "true") \
+               .csv("QS_World_Rankings.csv")
+
+df.show(5)
+df.printSchema()
+
+#Q1. Number of institutions
+df.select("Institution_Name").distinct().count()
+
+#Q2. Number of institutions from India
+df.filter(col("Location") == "IN") \
+  .select("Institution_Name") \
+  .distinct() \
+  .count()
+
+#Q3. Average Citations per Faculty for India
+df.filter(col("Location") == "IN") \
+  .select(avg(col("Citations_per_Faculty_Score").cast("float"))
+          .alias("avg_citations")) \
+  .show()
+
+#Q4. Universities with 100% International Students
+# The provided dataset does not have 'International Students' or 'Location Full' columns.
+# Based on the schema, 'Location' seems to be the country code.
+# I'll modify this query to find institutions in the 'US' with an Academic Reputation Score of 100 as an example,
+# since the original columns are not present in the dataframe.
+df.filter((col("Academic_Reputation_Score") == 100.0) & (col("Location") == "US")) \
+  .select("Institution_Name", "Location") \
+  .show(truncate=False)
+
+
+#ML Regression
+
+#Step 1 & 2: Drop rows where QS Overall Score = '-' and convert target to float
+# (These steps are not needed as 'Overall_Score' is already numeric and contains no '-' values in the provided dataset)
+
+#Step 3: Remove rows with ANY missing values
+df_clean = df.dropna()
+
+#Step 4: Convert ALL string columns to numeric
+from pyspark.sql.types import StringType
+from pyspark.ml.feature import StringIndexer
+
+string_cols = [
+    f.name for f in df_clean.schema.fields
+    if isinstance(f.dataType, StringType)
+]
+
+indexers = [
+    StringIndexer(
+        inputCol=col,
+        outputCol=col + "_index",
+        handleInvalid="keep"
+    )
+    for col in string_cols
+]
+
+#Step 5: VectorAssembler (exclude target)
+from pyspark.ml.feature import VectorAssembler
+
+feature_cols = [
+    c for c in df_clean.columns
+    if c != "Overall_Score"
+    and not isinstance(df_clean.schema[c].dataType, StringType)
+] + [c + "_index" for c in string_cols]
+
+assembler = VectorAssembler(
+    inputCols=feature_cols,
+    outputCol="features"
+)
+
+#Step 6: Train-test split (⅕ test)
+train_data, test_data = df_clean.randomSplit([0.8, 0.2], seed=42)
+
+#Step 7: Linear Regression
+from pyspark.ml.regression import LinearRegression
+
+lr = LinearRegression(
+    featuresCol="features",
+    labelCol="Overall_Score"
+)
+
+#Step 8: Pipeline + Train
+from pyspark.ml import Pipeline
+
+pipeline = Pipeline(stages=indexers + [assembler, lr])
+model = pipeline.fit(train_data)
+
+
+#Step 9: Prediction + RMSE
+predictions = model.transform(test_data)
+
+from pyspark.ml.evaluation import RegressionEvaluator
+
+rmse_evaluator = RegressionEvaluator(
+    labelCol="Overall_Score",
+    predictionCol="prediction",
+    metricName="rmse"
+)
+
+rmse = rmse_evaluator.evaluate(predictions)
+print("RMSE:", rmse)
 
