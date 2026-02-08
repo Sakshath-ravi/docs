@@ -444,3 +444,535 @@ Benefits of Bucketing:
 
 
 
+
+
+Section B 
+
+Q2(a) – HDFS Shell Commands (10 marks)
+1. Remove file olddata.csv from /user/hadoop/backup/
+Shell
+hdfs dfs -rm /user/hadoop/backup/olddata.csv
+``
+Show more lines
+2. Create nested directory /user/hadoop/project/data/
+Shell
+hdfs dfs -mkdir -p /user/hadoop/project/data/
+Show more lines
+3. Display first 10 lines of /user/hadoop/reports/report.txt
+Shell
+hdfs dfs -cat /user/hadoop/reports/report.txt | head -n 10
+Show more lines
+(If head not desired, some environments also support hdfs dfs -tail for end of file only.)
+4. Recursively copy local Logs/ into HDFS /user/hadoop/logs_backup/
+Shell
+hdfs dfs -copyFromLocal -R Logs/ /user/hadoop/logs_backup/
+Show more lines
+5. Check disk usage of /user/hadoop/data/
+Shell
+hdfs dfs -du -h /user/hadoop/data/
+``
+Show more lines
+
+Q2(b) – Spark RDD & PySpark (10 marks)
+1. Create RDD of key–value pairs and group by key
+Python
+rdd = sc.parallelize([
+("math", 85),
+("science", 90),
+("math", 75),
+("english", 70)
+])
+grouped = rdd.groupByKey()
+# To view as (key, list_of_values):
+grouped_result = grouped.mapValues(list).collect()
+``
+Show more lines
+2. From RDD of lines, extract all words and remove duplicates
+Assume:
+Python
+lines_rdd = sc.textFile("path/to/file.txt")
+``
+Show more lines
+Then:
+Python
+words_unique = (lines_rdd
+.flatMap(lambda line: line.split())
+.distinct())
+``
+Show more lines
+3. Given an RDD of integers, compute sum
+Assume:
+Python
+int_rdd = sc.parallelize([1, 2, 3, 4])
+``
+Show more lines
+Then:
+Python
+total_sum = int_rdd.reduce(lambda x, y: x + y)
+Show more lines
+4. PySpark code: Read JSON → select name, salary → filter salary > 50000 → count
+Python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
+spark = SparkSession.builder.appName("HighSalaryCount").getOrCreate()
+# 1) Read JSON file
+df = spark.read.json("path/to/input.json")
+# 2) Select only name and salary
+df_selected = df.select("name", "salary")
+# 3) Filter salary > 50000
+df_filtered = df_selected.filter(col("salary") > 50000)
+# 4) Count such rows
+count_high_salary = df_filtered.count()
+print("Number of records with salary > 50000:", count_high_salary)
+Show more lines
+
+
+Q2(c) – Hive Queries (10 marks)
+1. Create partitioned external table analytics_db.sales_data partitioned by region
+SQL
+CREATE EXTERNAL TABLE analytics_db.sales_data (
+sale_id INT,
+item STRING,
+amount DOUBLE,
+sale_date STRING
+)
+PARTITIONED BY (region STRING)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hive/warehouse/sales_data';
+Show more lines
+2. Right outer join orders and customers on customer_id with amount > 500
+SQL
+SELECT *
+FROM orders o
+RIGHT OUTER JOIN customers c
+ON o.customer_id = c.customer_id
+WHERE o.amount > 500;
+Show more lines
+3. Second highest salary from employee_details
+SQL
+SELECT MAX(salary)
+FROM employee_details
+WHERE salary < (SELECT MAX(salary) FROM employee_details);
+Show more lines
+
+Q2(d) – MongoDB (10 marks)
+1. Insert 4 documents into product_inventory
+JavaScript
+db.product_inventory.insertMany([
+{ product_name: "Laptop", category: "Electronics", price: 60000, stock_quantity: 25 },
+{ product_name: "Mouse", category: "Accessories", price: 1000, stock_quantity: 40 },
+{ product_name: "TV", category: "Electronics", price: 45000, stock_quantity: 12 },
+{ product_name: "Charger", category: "Accessories", price: 1500, stock_quantity: 20 }
+])
+Show more lines
+2. Find all Electronics with price > 10000
+JavaScript
+db.product_inventory.find({
+category: "Electronics",
+price: { $gt: 10000 }
+})
+Show more lines
+3. Update Accessories: reduce stock_quantity by 10 and return updated documents
+JavaScript
+db.product_inventory.updateMany(
+{ category: "Accessories" },
+{ $inc: { stock_quantity: -10 } }
+)
+db.product_inventory.find({ category: "Accessories" })
+Show more lines
+4. Delete products where stock_quantity < 15
+JavaScript
+db.product_inventory.deleteMany({
+stock_quantity: { $lt: 15 }
+})
+
+
+
+Q2(a) – HDFS Shell Commands (10 marks)
+1. Create directory InputDir under /user/hadoop/
+Shell
+hdfs dfs -mkdir /user/hadoop/InputDir
+Show more lines
+2. List contents of SampleDir with sizes and times
+Shell
+hdfs dfs -ls SampleDir
+``
+Show more lines
+3. Upload all .txt from local XYZ to /user/hadoop/InputDir/
+Shell
+hdfs dfs -put XYZ/*.txt /user/hadoop/InputDir/
+Show more lines
+4. Read file.txt from HDFS and view with less
+Assuming it’s in /user/hadoop/InputDir/file.txt:
+Shell
+hdfs dfs -cat /user/hadoop/InputDir/file.txt | less
+Show more lines
+5. Move OutputDir to ArchiveDir within HDFS
+Shell
+hdfs dfs -mv /user/hadoop/OutputDir /user/hadoop/ArchiveDir/
+Show more lines
+
+Q2(b) – Spark RDD & PySpark (10 marks)
+1. Create an RDD from list of strings
+Python
+rdd = sc.parallelize(["apple", "banana", "orange", "grape"])
+Show more lines
+2. Count number of elements in RDD
+Python
+count = rdd.count()
+Show more lines
+3. Filter even numbers from an RDD of numbers
+Assume:
+Python
+nums_rdd = sc.parallelize([1, 2, 3, 4, 5, 6])
+Show more lines
+Then:
+Python
+even_rdd = nums_rdd.filter(lambda x: x % 2 == 0)
+Show more lines
+4. Read text file and count lines containing “error”
+Python
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName("ErrorCount").getOrCreate()
+lines_rdd = spark.sparkContext.textFile("path/to/logfile.txt")
+error_lines = lines_rdd.filter(lambda line: "error" in line.lower())
+error_count = error_lines.count()
+print("Number of lines containing 'error':", error_count)
+
+Q2(c) – Hive Queries (10 marks)
+1. Create external table products in sales_db
+SQL
+USE sales_db;
+CREATE EXTERNAL TABLE products (
+product_id INT,
+product_name STRING,
+category STRING,
+price FLOAT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hive/products';
+Show more lines
+2. Left outer join employees and departments on dept_id
+SQL
+SELECT e.*, d.*
+FROM employees e
+LEFT OUTER JOIN departments d
+ON e.dept_id = d.dept_id;
+Show more lines
+3. Top 5 highest-paid employees from employee_details
+SQL
+SELECT *
+FROM employee_details
+ORDER BY salary DESC
+LIMIT 5;
+
+Q2(d) – MongoDB (10 marks)
+1. Create customer_data collection
+JavaScript
+db.createCollection("customer_data")
+Show more lines
+2. Insert 4 documents (name, email, city)
+JavaScript
+db.customer_data.insertMany([
+{ name: "Alice", email: "alice@example.com", city: "Delhi" },
+{ name: "Bob", email: "bob@example.com", city: "Mumbai" },
+{ name: "John", email: "john@example.com", city: "Bombay" },
+{ name: "Sara", email: "sara@example.com", city: "Delhi" }
+])
+Show more lines
+
+3. Find customers from Delhi
+JavaScript
+db.customer_data.find({ city: "Delhi" })
+Show more lines
+
+4. Update city “Bombay” → “Mumbai” and display modified docs
+JavaScript
+db.customer_data.updateMany(
+{ city: "Bombay" },
+{ $set: { city: "Mumbai" } }
+)
+db.customer_data.find({ city: "Mumbai" })
+
+5. Delete documents where name is “John”
+JavaScript
+db.customer_data.deleteMany({ name: "John" })
+
+Q2(a) – HDFS Shell Commands (14 marks)
+i. Print version of installed Hadoop (2 marks)
+Shell
+hadoop version
+``
+Show more lines
+ii. Copy file1.txt from InputDir to OutputDir as file2.txt (3 marks)
+Shell
+hdfs dfs -cp InputDir/file1.txt OutputDir/file2.txt
+Show more lines
+iii. Delete empty directory XYZ (3 marks)
+Shell
+hdfs dfs -rmdir XYZ
+Show more lines
+iv. List contents of SampleDir (3 marks)
+Shell
+hdfs dfs -ls SampleDir
+``
+Show more lines
+v. Fetch usage/help for mkdir command (3 marks)
+Shell
+hdfs dfs -help mkdir
+
+Q2(b) – Spark word count pseudo-code (8 marks)
+Pseudo-code to load text.txt into an RDD and compute word count:
+Python
+from pyspark import SparkContext
+sc = SparkContext("local", "WordCount")
+# 1) Load text file into RDD
+text_rdd = sc.textFile("text.txt")
+# 2) Split lines into words
+words_rdd = text_rdd.flatMap(lambda line: line.split())
+# 3) Map each word to (word, 1)
+pair_rdd = words_rdd.map(lambda w: (w, 1))
+# 4) Reduce by key to sum counts
+word_counts = pair_rdd.reduceByKey(lambda a, b: a + b)
+# 5) Collect or save result
+result = word_counts.collect()
+for (word, count) in result:
+print(word, count)
+
+Q2(c) – Hive Join + Expected Output (8 marks)
+Tables:
+Table1
+Name Id
+Joe 2
+Hank 4
+Ali 0
+Table2
+Id Name
+2 Tie
+4 Coat
+3 Hat
+1 Scarf
+Inner join on Id:
+SQL
+SELECT t1.Name AS name1,
+t1.Id,
+t2.Name AS name2
+FROM Table1 t1
+INNER JOIN Table2 t2
+ON t1.Id = t2.Id;
+Show more lines
+Expected Output:
+Only matching Ids are 2 and 4:
+name1 Id name2
+Joe 2 Tie
+Hank 4 Coat
+
+
+Q2(d) – MongoDB (10 marks)
+i. Create collection orders (1 mark)
+JavaScript
+db.createCollection("orders")
+Show more lines
+ii. Insert record into orders (3 marks)
+JavaScript
+db.orders.insertOne({
+"order_id": 1,
+"order_date": "2013-07-25 00:00:00.0",
+"order_customer_id": 11599,
+"order_status": "CLOSED"
+})
+``
+Show more lines
+iii. Fetch orders with order_status = "COMPLETE" (3 marks)
+JavaScript
+db.orders.find({ order_status: "COMPLETE" })
+Show more lines
+iv. Compute count of orders with status COMPLETE and CLOSED (3 marks)
+JavaScript
+db.orders.aggregate([
+{ $match: { order_status: { $in: ["COMPLETE", "CLOSED"] } } },
+{ $group: { _id: "$order_status", count: { $sum: 1 } } }
+])
+
+Q2(a) – HDFS Commands (10 marks)
+Assume all paths are relative to current HDFS directory.
+1. Copy file1.txt from InputDir to OutputDir as file2.txt
+Shell
+hdfs dfs -cp InputDir/file1.txt OutputDir/file2.txt
+Show more lines
+2. Delete empty directory XYZ
+Shell
+hdfs dfs -rmdir XYZ
+Show more lines
+3. List files & directories under SampleDir
+Shell
+hdfs dfs -ls SampleDir
+Show more lines
+4. Recursively list files & directories under SampleDir
+Shell
+hdfs dfs -ls -R SampleDir
+``
+Show more lines
+5. Change permission of file.txt to read-only (444)
+Shell
+hdfs dfs -chmod 444 file.txt
+Show more lines
+
+Q2(b) – Spark RDD (10 marks)
+1. Create an RDD from List(1, 2, 3, 4, 5, 6)
+Python
+rdd = sc.parallelize([1, 2, 3, 4, 5, 6])
+Show more lines
+2. Read/load text file from /path/to/file.txt into RDD
+Python
+text_rdd = sc.textFile("/path/to/file.txt")
+Show more lines
+3. Filter even numbers from RDD
+Python
+even_rdd = rdd.filter(lambda x: x % 2 == 0)
+Show more lines
+4. Map each element to its square
+Python
+squared_rdd = rdd.map(lambda x: x * x)
+``
+Show more lines
+5. Count number of elements
+Python
+count = rdd.count()
+
+Q2(c) – Hive (10 marks)
+1. Create database anotherDB
+SQL
+CREATE DATABASE anotherDB;
+``
+Show more lines
+2. Create EXTERNAL TABLE orders1 in anotherDB
+SQL
+USE anotherDB;
+CREATE EXTERNAL TABLE orders1 (
+order_id INT,
+order_date STRING,
+order_customer_id INT,
+order_status STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hive/warehouse/anotherDB.db/orders1';
+``
+Show more lines
+(Location can vary; main idea is EXTERNAL and columns are correct.)
+3. Load data into orders1 from local file
+Assuming local file path /local/path/orders1.csv:
+SQL
+LOAD DATA LOCAL INPATH '/local/path/orders1.csv'
+INTO TABLE orders1;
+
+Q2(d) – MongoDB (10 marks)
+1. Create orders collection
+JavaScript
+db.createCollection("orders")
+``
+Show more lines
+2. Insert two records into orders
+JavaScript
+db.orders.insertMany([
+{ "order_id": 1, "order_customer_id": 11599, "order_status": "CLOSED" },
+{ "order_id": 2, "order_customer_id": 11698, "order_status": "OPEN" }
+])
+Show more lines
+3. Fetch orders with status COMPLETE
+JavaScript
+db.orders.find({ order_status: "COMPLETE" })
+
+Q2(a) – HDFS Commands (8 marks)
+1. Print Hadoop version
+Shell
+hadoop version
+Show more lines
+2. Syntax to list files/dirs in HDFS path /path
+Shell
+hdfs dfs -ls /path
+Show more lines
+3. Syntax to copy local file1 to HDFS
+Shell
+hdfs dfs -copyFromLocal file1 /path/in/hdfs/
+Show more lines
+(or -put)
+4. Copy testfile from HDFS to local
+Shell
+hdfs dfs -copyToLocal /path/in/hdfs/testfile /local/path/
+
+5. Display content of sample file inside newDataFlair
+Shell
+hdfs dfs -cat newDataFlair/sample
+
+Q2(b) – Spark RDD Commands (10 marks)
+Given: list1 = [10, 20, 30, 40, 50]
+Python
+rdd = sc.parallelize([10, 20, 30, 40, 50])
+# 1. Display all elements
+print(rdd.collect())
+# 2. Sum of all elements
+print(rdd.sum())
+# 3. Maximum
+print(rdd.max())
+# 4. Minimum
+print(rdd.min())
+# 5. Mean
+print(rdd.mean())
+# 6. Standard deviation
+print(rdd.stdev())
+# 7. Variance
+print(rdd.variance())
+
+# 8. First element
+print(rdd.first())
+# 9. Number of elements
+print(rdd.count())
+Show more lines
+Q2(c) – Hive external table stocks (4 marks)
+SQL
+CREATE EXTERNAL TABLE stocks (
+exch STRING,
+stock_symbol STRING,
+stock_date STRING,
+open_price FLOAT,
+high_price FLOAT,
+low_price FLOAT,
+close_price FLOAT,
+volume INT,
+adj_close_price FLOAT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/StocksDir/';
+
+Q2(d) – MongoDB (8 marks)
+1. Create users collection
+JavaScript
+db.createCollection("users")
+Show more lines
+2. Insert 5 records with name and age
+JavaScript
+db.users.insertMany([
+{ name: "Amit", age: 30 },
+{ name: "Rahul", age: 35 },
+{ name: "Sneha", age: 40 },
+{ name: "John", age: 34 },
+{ name: "Priya", age: 28 }
+])
+``
+Show more lines
+3. Display users with age >= 34
+JavaScript
+db.users.find({ age: { $gte: 34 } })
+
+
+
+
