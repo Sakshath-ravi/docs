@@ -1341,3 +1341,538 @@ rmse_evaluator = RegressionEvaluator(
 rmse = rmse_evaluator.evaluate(predictions)
 print("RMSE:", rmse)
 
+----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+Bank marketing dataset loaded as a Spark DataFrame (say df) with at least:
+age, job, balance, loan, education, marital, deposit, and possibly others.
+We’ll assume:
+Python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count, min, max, avg
+from pyspark.sql.functions import when
+spark = SparkSession.builder.appName("BankTermDeposit").getOrCreate()
+# df is already loaded spark DataFrame
+``
+Show more lines
+꼡 3(a) PySpark / Spark SQL Analytics (15 marks)
+1. Overall minimum, maximum, and average account balance
+Python
+from pyspark.sql.functions import min, max, avg
+df.select(
+min("balance").alias("min_balance"),
+max("balance").alias("max_balance"),
+avg("balance").alias("avg_balance")
+).show()
+``
+Show more lines
+2. Job type with the highest number of people
+Option 1 – DataFrame API:
+Python
+df.groupBy("job") \
+.count() \
+.orderBy(col("count").desc()) \
+.limit(1) \
+.show()
+Show more lines
+Option 2 – Spark SQL (if registered as view):
+Python
+df.createOrReplaceTempView("bank")
+spark.sql("""
+SELECT job, COUNT(*) AS cnt
+FROM bank
+GROUP BY job
+ORDER BY cnt DESC
+LIMIT 1
+""").show()
+Show more lines
+3. Number of people aged over 60 and having a loan
+Assuming loan is "yes" / "no":
+Python
+df.filter((col("age") > 60) & (col("loan") == "yes")) \
+.count()
+``
+Show more lines
+4. Count of people by education who subscribed (deposit = 'yes')
+Python
+df.filter(col("deposit") == "yes") \
+.groupBy("education") \
+.count() \
+.orderBy("education") \
+.show()
+Show more lines
+5. Count of deposit (‘yes’ vs ‘no’) for each marital status
+Python
+df.groupBy("marital", "deposit") \
+.count() \
+.orderBy("marital", "deposit") \
+.show()
+Show more lines
+6. Remove all rows with any null values
+Python
+df_clean = df.na.drop() # drops rows where ANY column has null
+Show more lines
+You can verify:
+Python
+print(df.count(), "->", df_clean.count())
+Show more lines
+꼡 3(b) Spark ML – Logistic Regression on deposit (25 marks)
+Goal:
+ StringIndex all string columns
+ VectorAssembler → features
+ Split train/test (25% test)
+ Train LogisticRegression
+ Predict & print accuracy
+We’ll assume deposit is "yes"/"no" and we’ll index it as label.
+Python
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+from pyspark.sql.types import StringType
+Show more lines
+1. StringIndexer for all string columns
+Python
+# Start from df_clean if you want null-free data; otherwise use df
+df_ml = df_clean
+# Identify string columns
+string_cols = [f.name for f in df_ml.schema.fields if isinstance(f.dataType, StringType)]
+# We'll index all string columns, including 'deposit'
+indexers = []
+for c in string_cols:
+indexer = StringIndexer(inputCol=c, outputCol=c + "_idx", handleInvalid="keep")
+df_ml = indexer.fit(df_ml).transform(df_ml)
+# Drop original string columns if we want a purely numeric DF
+df_indexed = df_ml.drop(*string_cols)
+df_indexed.printSchema()
+# Now there should be no string-type columns
+Show more lines
+2. VectorAssembler: combine all columns except deposit (target)
+We’ll use deposit_idx as label.
+Python
+# All columns except label column
+feature_cols = [c for c in df_indexed.columns if c != "deposit_idx"]
+assembler = VectorAssembler(
+inputCols=feature_cols,
+outputCol="features"
+)
+df_vector = assembler.transform(df_indexed) \
+.select("features", "deposit_idx")
+# Rename label column to 'deposit' as per question
+df_final = df_vector.withColumnRenamed("deposit_idx", "deposit")
+df_final.printSchema()
+# Should show: features (vector), deposit (double)
+Show more lines
+3. Split into train/test (25% test)
+Python
+train_df, test_df = df_final.randomSplit([0.75, 0.25], seed=42)
+Show more lines
+4. Build LogisticRegression model
+Python
+lr = LogisticRegression(
+featuresCol="features",
+labelCol="deposit"
+)
+lr_model = lr.fit(train_df)
+Show more lines
+5. Predict on test data and print accuracy
+Python
+predictions = lr_model.transform(test_df)
+evaluator = MulticlassClassificationEvaluator(
+labelCol="deposit",
+predictionCol="prediction",
+metricName="accuracy"
+)
+accuracy = evaluator.evaluate(predictions)
+print("Test Accuracy =", accuracy)
+``
+Show more lines
+脥脪 ESA_BDA-June 2025 – STARTUPS / PROFIT REGRESSION
+Dataset: Startups with columns like
+sl_no, R&D_Spend, Administration, Marketing_Spend, State, Profit (names may vary slightly,
+adapt to your actual schema).
+Assume:
+Python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, min, max, avg, count
+spark = SparkSession.builder.appName("StartupsProfit").getOrCreate()
+# df = loaded dataframe
+Show more lines
+꼡 3(a) PySpark / SQL Queries (15 marks)
+1. Overall min, max, avg profit
+Python
+df.select(
+min("Profit").alias("min_profit"),
+max("Profit").alias("max_profit"),
+avg("Profit").alias("avg_profit")
+).show()
+Show more lines
+2. State with the most startups
+Python
+df.groupBy("State") \
+.count() \
+.orderBy(col("count").desc()) \
+.limit(1) \
+.show()
+Show more lines
+3. Average administration cost for startups in Florida
+Python
+df.filter(col("State") == "Florida") \
+.select(avg("Administration").alias("avg_admin_cost")) \
+.show()
+Show more lines
+4. How many startups are located in California?
+Python
+count_ca = df.filter(col("State") == "California").count()
+print("Number of startups in California:", count_ca)
+Show more lines
+5. Startups with profit > 100,000 and marketing < 50,000
+Python
+df.filter(
+(col("Profit") > 100000) &
+(col("Marketing_Spend") < 50000)
+).count()
+Show more lines
+(Adjust column names to your dataset: sometimes Marketing_Spend is Marketing_Spend or
+Marketing Spend.)
+6. Remove column sl_no and drop rows with any nulls
+Python
+df_no_sl = df.drop("sl_no")
+df_clean = df_no_sl.na.drop()
+Show more lines
+꼡 3(b) Spark ML – Linear Regression on Profit (25 marks)
+Python
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.evaluation import RegressionEvaluator
+from pyspark.sql.types import StringType
+``
+Show more lines
+1. StringIndexer for all string columns
+Python
+df_ml = df_clean
+string_cols = [f.name for f in df_ml.schema.fields if isinstance(f.dataType, StringType)]
+for c in string_cols:
+indexer = StringIndexer(inputCol=c, outputCol=c + "_idx", handleInvalid="keep")
+df_ml = indexer.fit(df_ml).transform(df_ml)
+df_indexed = df_ml.drop(*string_cols)
+df_indexed.printSchema()
+Show more lines
+2. VectorAssembler: combine all columns except Profit
+Python
+feature_cols = [c for c in df_indexed.columns if c != "Profit"]
+assembler = VectorAssembler(
+inputCols=feature_cols,
+outputCol="features"
+)
+df_vector = assembler.transform(df_indexed).select("features", "Profit")
+Show more lines
+3. Split into train/test with 1/4 for testing
+Python
+train_df, test_df = df_vector.randomSplit([0.75, 0.25], seed=42)
+Show more lines
+4. Build LinearRegression model
+Python
+lr = LinearRegression(
+featuresCol="features",
+labelCol="Profit"
+)
+lr_model = lr.fit(train_df)
+Show more lines
+5. Predict on test data and print MSE and RMSE
+Python
+predictions = lr_model.transform(test_df)
+evaluator_mse = RegressionEvaluator(
+labelCol="Profit",
+predictionCol="prediction",
+metricName="mse"
+)
+evaluator_rmse = RegressionEvaluator(
+labelCol="Profit",
+predictionCol="prediction",
+metricName="rmse"
+)
+mse = evaluator_mse.evaluate(predictions)
+rmse = evaluator_rmse.evaluate(predictions)
+print("Test MSE =", mse)
+print("Test RMSE =", rmse)
+Show more lines
+脥脫 ESA_BD-March 2022 – BANGALORE HOUSING
+Dataset: Bangalore Housing, loaded as df.
+Assume columns: location, size (like "2 BHK"), price etc.
+Python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, avg
+spark = SparkSession.builder.appName("BangaloreHousing").getOrCreate()
+# df already loaded
+Show more lines
+꼡 3(a) PySpark / SQL Queries (15 marks)
+i. Count properties in “HSR Layout”
+Python
+df.filter(col("location") == "HSR Layout").count()
+``
+Show more lines
+ii. How many “2 BHK” properties in “Whitefield”
+Python
+df.filter(
+(col("location") == "Whitefield") &
+(col("size") == "2 BHK")
+).count()
+``
+Show more lines
+iii. Average price of “2 BHK” in “HSR Layout”
+Python
+df.filter(
+(col("location") == "HSR Layout") &
+(col("size") == "2 BHK")
+).select(avg("price").alias("avg_price")).show()
+``
+Show more lines
+꼡 3(b) Spark ML – Linear Regression on price (25 marks)
+i. Remove features with more than 1/3 missing, then drop remaining null rows
+Python
+from pyspark.sql.functions import count, col
+n_rows = df.count()
+threshold = n_rows / 3.0 # one-third
+cols_to_keep = []
+for c in df.columns:
+null_count = df.filter(col(c).isNull()).count()
+if null_count <= threshold:
+cols_to_keep.append(c)
+df_reduced = df.select(cols_to_keep)
+df_clean = df_reduced.na.drop()
+Show more lines
+ii. StringIndexer: convert all string columns to numeric
+Python
+from pyspark.sql.types import StringType
+from pyspark.ml.feature import StringIndexer
+df_ml = df_clean
+string_cols = [f.name for f in df_ml.schema.fields if isinstance(f.dataType, StringType)]
+for c in string_cols:
+indexer = StringIndexer(inputCol=c, outputCol=c + "_idx", handleInvalid="keep")
+df_ml = indexer.fit(df_ml).transform(df_ml)
+df_indexed = df_ml.drop(*string_cols)
+df_indexed.printSchema()
+``
+Show more lines
+iii. VectorAssembler: all columns except target price into features
+Python
+from pyspark.ml.feature import VectorAssembler
+feature_cols = [c for c in df_indexed.columns if c != "price"]
+assembler = VectorAssembler(
+inputCols=feature_cols,
+outputCol="features"
+)
+df_vector = assembler.transform(df_indexed).select("features", "price")
+``
+Show more lines
+iv. Split into train/test 75:25
+Python
+train_df, test_df = df_vector.randomSplit([0.75, 0.25], seed=42)
+``
+Show more lines
+v. Train default LinearRegression model (label=price)
+Python
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.evaluation import RegressionEvaluator
+lr = LinearRegression(
+featuresCol="features",
+labelCol="price"
+)
+lr_model = lr.fit(train_df)
+predictions = lr_model.transform(test_df)
+evaluator = RegressionEvaluator(
+labelCol="price",
+predictionCol="prediction",
+metricName="rmse"
+)
+rmse = evaluator.evaluate(predictions)
+print("RMSE on test data =", rmse)
+Show more lines
+脥脬 ESA_BDA-July 2024 – QS WORLD UNIVERSITY RANKINGS
+Dataset: QS World University Rankings, loaded as df.
+Assume relevant columns:
+ "Institution" or similar
+ "Location" or "Location Full"
+ "Citations per Faculty"
+ "International Students" (percentage)
+ "QS Overall Score"
+Python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count, avg
+spark = SparkSession.builder.appName("QSRankings").getOrCreate()
+# df already loaded
+Show more lines
+꼡 3(a) PySpark / SQL Analytics (15 marks)
+i. How many institutions are in the dataset?
+Python
+df.count()
+``
+Show more lines
+ii. How many institutions from “India”
+Assuming a column called "Location" or "Location Full":
+Python
+df.filter(col("Location") == "India").count()
+Show more lines
+(or change to "Location Full" as appropriate.)
+iii. Average “Citations per Faculty” for universities in India
+Python
+df.filter(col("Location") == "India") \
+.select(avg("Citations per Faculty").alias("avg_citations")) \
+.show()
+Show more lines
+iv. Institutions where “International Students” = 100%
+Python
+df.filter(col("International Students") == 100) \
+.select("Institution", "Location Full") \
+.show()
+``
+Show more lines
+(Adjust column names to match your dataset: e.g., "Institution Name".)
+꼡 3(b) Spark ML – Regression on “QS Overall Score” (25 marks)
+Key steps:
+ Drop rows where QS Overall Score = '-' and cast to float
+ Drop rows with other missing values
+ StringIndex string columns
+ VectorAssembler all except QS Overall Score
+ Split train/test (80:20, since one-fifth test)
+ Train LinearRegression, compute RMSE
+Python
+from pyspark.sql.functions import col
+from pyspark.sql.types import StringType, FloatType
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.evaluation import RegressionEvaluator
+Show more lines
+i. Filter out '-' and cast QS Overall Score to float
+Python
+df_score = df.filter(col("QS Overall Score") != "-") \
+.withColumn("QS Overall Score", col("QS Overall Score").cast(FloatType()))
+Show more lines
+ii. Drop all rows with any missing value
+Python
+df_clean = df_score.na.drop()
+Show more lines
+iii. StringIndexer for all string columns
+Python
+df_ml = df_clean
+string_cols = [f.name for f in df_ml.schema.fields if isinstance(f.dataType, StringType)]
+for c in string_cols:
+indexer = StringIndexer(inputCol=c, outputCol=c + "_idx", handleInvalid="keep")
+df_ml = indexer.fit(df_ml).transform(df_ml)
+df_indexed = df_ml.drop(*string_cols)
+df_indexed.printSchema()
+``
+Show more lines
+iv. VectorAssembler: all columns except target into features
+Python
+feature_cols = [c for c in df_indexed.columns if c != "QS Overall Score"]
+assembler = VectorAssembler(
+inputCols=feature_cols,
+outputCol="features"
+)
+df_vector = assembler.transform(df_indexed).select("features", "QS Overall Score")
+Show more lines
+v. Split into train/test with one-fifth held for testing (80:20)
+Python
+train_df, test_df = df_vector.randomSplit([0.8, 0.2], seed=42)
+``
+Show more lines
+vi. Train LinearRegression model
+Python
+lr = LinearRegression(
+featuresCol="features",
+labelCol="QS Overall Score"
+)
+lr_model = lr.fit(train_df)
+``
+Show more lines
+vii. Predict on test data and print RMSE
+Python
+predictions = lr_model.transform(test_df)
+evaluator = RegressionEvaluator(
+labelCol="QS Overall Score",
+predictionCol="prediction",
+metricName="rmse"
+)
+rmse = evaluator.evaluate(predictions)
+print("RMSE on test data =", rmse)
+``
+Show more lines
+脮脭 April 2022 ESA – EMPLOYEE-COMPENSATION
+Assume DataFrame df is already loaded as Employee Compensation dataset, with at least:
+Employee_Identifier, Total_Benefits, Total_Compensation, and a “calendar year type” column
+(e.g., Year_Type or Year / Calendar_Year_Type).
+Python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count, avg
+spark = SparkSession.builder.appName("EmployeeCompensation").getOrCreate()
+# df already loaded
+Show more lines
+꼡 Section C Questions (30 marks)
+1. Total number of records in the dataset
+Python
+df.count()
+Show more lines
+2. Missing values count for every column
+Python
+from pyspark.sql.functions import sum as _sum, when
+missing_counts = df.select([
+_sum(when(col(c).isNull(), 1).otherwise(0)).alias(c)
+for c in df.columns
+])
+missing_counts.show()
+Show more lines
+3. Remove feature Employee_Identifier from DataFrame
+Python
+df_no_empid = df.drop("Employee_Identifier")
+Show more lines
+4. Display DataFrame schema
+Python
+df_no_empid.printSchema()
+Show more lines
+5. Display summary statistics of DataFrame
+Python
+df_no_empid.describe().show()
+Show more lines
+6. Display first 5 rows of DataFrame
+Python
+df_no_empid.show(5)
+Show more lines
+7. Average Total_Benefits for each calendar year type
+Assuming a column like Year_Type:
+Python
+df_no_empid.groupBy("Year_Type") \
+.agg(avg("Total_Benefits").alias("avg_total_benefits")) \
+.show()
+Show more lines
+(If the column is named diƯerently, adjust accordingly: Calendar_Year_Type etc.)
+8. Print correlation between Total_Benefits and Total_Compensation
+Python
+corr_value = df_no_empid.stat.corr("Total_Benefits", "Total_Compensation")
+print("Correlation:", corr_value)
+``
+Show more lines
+9. Data processing: split, LinearRegression, RMSE
+The question says: data processing code is provided in notebook – assume a prebuilt df_vector
+with columns: features and Total_Compensation.
+If we need to show full steps briefly:
+Python
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.evaluation import RegressionEvaluator
+# Assume df_vector: columns -> features (vector), Total_Compensation (label)
+# If not, you would create it via VectorAssembler from numeric/indexed columns.
+train_df, test_df = df_vector.randomSplit([0.75, 0.25], seed=42)
+lr = LinearRegression(
+featuresCol="features",
+labelCol="Total_Compensation"
+)
+lr_model = lr.fit(train_df)
+predictions = lr_model.transform(test_df)
+evaluator = RegressionEvaluator(
+labelCol="Total_Compensation",
+predictionCol="prediction",
+metricName="rmse"
+)
+rmse = evaluator.evaluate(predictions)
+print("RMSE =", rmse
