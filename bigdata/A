@@ -1,191 +1,104 @@
-Good. Section A is where **clarity + structure** wins marks. I’ll give you **exam-ready theory answers**, not rambling blog posts. Write them almost verbatim and you’re safe.
-
----
-
-## **SECTION A – SET 1**
-
-### **1(a) HDFS Architecture & Role of NameNode and DataNode (5 marks)**
-
-HDFS (Hadoop Distributed File System) follows a **master–slave architecture** designed for storing large datasets reliably across commodity hardware.
-
-The **NameNode** is the master node. It maintains metadata such as file names, directory structure, permissions, and the mapping of file blocks to DataNodes. It does **not** store actual data. It also monitors DataNodes via heartbeats and block reports.
-
-The **DataNodes** are worker nodes that store actual data blocks. They perform read/write operations as instructed by the NameNode and periodically send status updates.
-
-HDFS splits files into large blocks (typically 128 MB) and stores multiple replicas of each block across different DataNodes for **fault tolerance**.
-
----
-
-### **1(b) What is HBase? Comparison with RDBMS & Use Cases (5 marks)**
-
-HBase is a **distributed, column-oriented NoSQL database** built on top of HDFS. It is designed for **real-time read/write access** to large volumes of sparse data.
-
-**Comparison with RDBMS:**
-
-* HBase is schema-flexible, whereas RDBMS uses fixed schemas.
-* HBase scales horizontally; RDBMS typically scales vertically.
-* HBase does not support complex joins or SQL transactions like RDBMS.
-
-**Use cases:**
-
-1. Real-time analytics on massive datasets (e.g., clickstream analysis)
-2. Time-series or sensor data storage
-
----
-
-### **1(c) What is YARN? Components & Function (5 marks)**
-
-YARN (Yet Another Resource Negotiator) is Hadoop’s **cluster resource management layer**. It separates resource management from data processing, enabling multiple frameworks to run on Hadoop.
-
-**Key components:**
-
-* **ResourceManager:** Allocates cluster resources.
-* **NodeManager:** Manages resources on each node.
-* **ApplicationMaster:** Manages the lifecycle of a specific application.
-* **Containers:** Resource units (CPU + memory) assigned to applications.
-
-YARN improves cluster utilization and supports multiple processing models beyond MapReduce.
-
----
-
-### **1(d) Role of DAG in Spark vs MapReduce (5 marks)**
-
-In Spark, a **DAG (Directed Acyclic Graph)** represents the sequence of transformations applied to data. Spark builds a DAG before execution and optimizes it.
-
-Compared to MapReduce:
-
-* Spark executes multiple stages in memory.
-* DAG eliminates unnecessary disk I/O between steps.
-* Allows pipelining of operations.
-
-This results in **faster execution**, especially for iterative and interactive workloads.
-
----
-
-## **SECTION A – SET 2**
-
-### **1(a) What is Hadoop & Role of Distributed Computing (5 marks)**
-
-Hadoop is an **open-source framework** for distributed storage and processing of large datasets using clusters of commodity hardware.
-
-A **Distributed Computing Environment** enables parallel processing, fault tolerance, and scalability by dividing tasks across multiple nodes.
-
-**Two Hadoop ecosystem components:**
-
-* HDFS (storage)
-* YARN (resource management)
-
----
-
-### **1(b) Hive Architecture & Components (5 marks)**
-
-Hive provides a **SQL-like interface (HiveQL)** on top of Hadoop.
-
-**Components:**
-
-* **Metastore:** Stores metadata about tables and schemas.
-* **Driver:** Manages query lifecycle.
-* **Compiler:** Converts HiveQL into execution plans.
-* **Execution Engine:** Executes the plan using MapReduce or Spark.
-
----
-
-### **1(c) CAP Theorem & NoSQL Types (5 marks)**
-
-The **CAP Theorem** states that a distributed system can guarantee only two of the following three:
-
-* Consistency
-* Availability
-* Partition Tolerance
-
-**Relation to NoSQL:**
-
-* CP systems prioritize consistency.
-* AP systems prioritize availability.
-
-**Four NoSQL types:**
-
-1. Key-Value stores
-2. Column-family stores
-3. Document databases
-4. Graph databases
-
----
-
-### **1(d) Spark as a Unified Analytics Engine (5 marks)**
-
-Apache Spark is called a **unified analytics engine** because it supports batch processing, streaming, machine learning, graph processing, and SQL within a single framework.
-
-Spark’s **in-memory computation** keeps intermediate results in RAM, reducing disk I/O.
-Hadoop MapReduce writes intermediate results to disk after each phase, making it slower.
-
----
-
-## **SECTION A – SET 3**
-
-### **1(a) Spark Architecture (6 marks)**
-
-Apache Spark follows a master–worker architecture.
-
-**Components:**
-
-* **Driver Program:** Controls execution.
-* **SparkContext:** Entry point to Spark.
-* **Cluster Manager:** Allocates resources.
-* **Executors:** Run tasks and store data in memory.
-* **Tasks:** Smallest execution units.
-
----
-
-### **1(b) Data Lake vs Data Warehouse (4 marks)**
-
-| Data Lake               | Data Warehouse        |
-| ----------------------- | --------------------- |
-| Stores raw data         | Stores processed data |
-| Schema-on-read          | Schema-on-write       |
-| Supports all data types | Structured data only  |
-| Used for ML & analytics | Used for reporting    |
-
----
-
-### **1(c) Partitioning in Hive with Example (6 marks)**
-
-Partitioning in Hive divides a table into smaller parts based on column values, improving query performance.
-
-**Example:**
-
-```sql
-CREATE TABLE sales (
-  id INT,
-  amount DOUBLE
-)
-PARTITIONED BY (year INT);
-```
-
-Data is stored in directories like:
-
-```
-/sales/year=2024/
-```
-
-Queries filtering on `year` scan only relevant partitions.
-
----
-
-### **1(d) Coalesce vs Repartition (4 marks)**
-
-* **Coalesce:** Reduces number of partitions without full shuffle.
-* **Repartition:** Increases or decreases partitions with full shuffle.
-
-Coalesce is faster but less flexible; repartition is more expensive but evenly redistributes data.
-
----
-
-## **Final brutal truth**
-
-If you write answers at **this level of structure and density**, Section A is **free marks**.
-No examiner expects poetry — they want **definitions + components + contrast**.
-
-At this point, you’ve covered **A, B, and C** completely.
-
-Your only enemy now is **overthinking**.
+Q1(a)
+Explain the architecture of HDFS and describe the roles of the NameNode and DataNode.
+Answer:
+HDFS Architecture (Master–Slave):
+• HDFS = Hadoop Distributed File System; used for reliable, scalable distributed
+storage.
+• Follows master–slave architecture:
+o One active NameNode (master)
+o Many DataNodes (slaves)
+NameNode (Master):
+• Stores metadata (file names, hierarchy, permissions, block locations).
+• Manages file system namespace (directory tree).
+• Coordinates operations like create, delete, rename files/directories.
+• Does not store actual file data, only metadata in memory.
+DataNodes (Slaves):
+• Store actual data blocks on local disks.
+• Serve read/write requests from clients and NameNode.
+• Periodically send:
+o Heartbeats (to confirm they’re alive)
+o Block reports (which blocks they hold)
+Data Storage Workflow:
+• File is split into blocks (e.g., 128 MB).
+• Each block is replicated across multiple DataNodes (default factor 3).
+• NameNode tracks which DataNode has which block
+
+Q1(b)
+What is HBase? Compare it with traditional RDBMS and mention two use cases.
+Answer:
+What is HBase?
+• HBase is a NoSQL, distributed, column-family store built on top of HDFS, inspired by
+Google Bigtable.
+• Designed for random real-time read/write access to big data.
+
+HBase vs RDBMS:
+
+Aspect    HBase (NoSQL)                        Traditional RDBMS
+Schema    Schema-flexible (column families)    Fixed schema (tables with fixed
+columns)
+Data Model Column family, sparse, wide tables   Relational (rows/columns,normalized)
+Joins     Not natively supported                Supported via SQL
+Scaling   Horizontal scale over commodityservers       Mostly vertical; scale-up
+Transactions     Limited atomicity (row-level)         ACID transactions
+Query            Language No SQL; uses APIs & filters           SQL
+
+
+Two Use Cases:
+1. Time-series / log data storage
+o Clickstreams, sensor data, server logs where data is large and append-heavy.
+2. Real-time lookup for large datasets
+o User profiles, recommendation data, key-based access with low latency
+
+Q1(c)
+What is YARN in Hadoop? Explain its function and list its key components.
+Answer:
+YARN (Yet Another Resource Negotiator):
+• Acts as cluster resource management and job scheduling layer in Hadoop.
+• Decouples resource management from data processing models, allowing different
+engines (MapReduce, Spark, etc.) to run on the same cluster.
+
+Main Functions:
+• Track available resources (CPU, memory) across nodes.
+• Allocate resources to applications.
+• Schedule tasks and monitor application lifecycle.
+Key Components:
+1. ResourceManager (RM):
+o Central authority for resource allocation.
+o Runs Scheduler (allocates containers) and ApplicationManager.
+2. NodeManager (NM):
+o Runs on each worker node.
+o Manages containers.
+o Reports resource usage and health to RM.
+3. ApplicationMaster (AM):
+o One per application/job.
+o Negotiates resources from RM.
+o Coordinates tasks’ execution inside containers on NMs.
+4. Containers:
+o Resource bundles (CPU + RAM) granted to an AM or task.
+o Execution environment for individual tasks.
+
+
+
+Q1(d)
+What is the role of DAG (Directed Acyclic Graph) in Apache Spark? How does it improve job
+execution compared to MapReduce?
+Answer:
+Role of DAG in Spark:
+• Spark builds a DAG of stages and tasks for each job.
+• Nodes = RDD/DataFrame operations, edges = dependencies.
+• The DAG describes how data flows through transformations.
+How it improves over MapReduce:
+1. Global Optimization:
+o Spark’s DAG scheduler can optimize across multiple operations (e.g.,
+pipelining, collapsing stages).
+o MapReduce treats each job independently (map → shuffle → reduce).
+
+2. In-Memory Computation:
+o Intermediate results can be cached in memory (RDD/DataFrame cache).
+o MapReduce writes intermediates to disk between every phase.
+3. Less Disk I/O & Latency:
+o Fewer read/write cycles → faster execution.
+o Especially beneficial for iterative algorithms and interactive queries.
+4. Pipelining:
+o Multiple narrow transformations can run in a single stage.
+o MapReduce has fixed map/reduce stages with disk in-between.
