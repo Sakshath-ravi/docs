@@ -102,3 +102,345 @@ o Especially beneficial for iterative algorithms and interactive queries.
 4. Pipelining:
 o Multiple narrow transformations can run in a single stage.
 o MapReduce has fixed map/reduce stages with disk in-between.
+
+
+
+Q1(a)
+What is Hadoop? Describe the role of Distributed Computing Environment and list two
+components of the Hadoop Ecosystem.
+Answer:
+• Hadoop is an open-source framework for distributed storage (HDFS) and parallel
+processing (MapReduce/YARN) of large datasets across clusters of commodity
+hardware.
+Role of Distributed Computing Environment:
+• Splits data into blocks and stores across multiple nodes.
+• Moves computation to the data (data locality).
+• Enables parallel processing of big data.
+• Provides fault tolerance through replication and re-execution.
+• Allows horizontal scalability by adding more nodes.
+Two Hadoop Ecosystem Components:
+1. HDFS – Distributed storage system.
+2. YARN or MapReduce – Resource management & proces
+
+
+Q1(b)
+Describe the architecture of Hive. Mention the role of Metastore, Driver, Compiler, and
+Execution Engine.
+Answer:
+• Hive provides SQL-like querying (HiveQL) over data stored in HDFS.
+• Main components: User Interface, Driver, Compiler, Optimizer, Execution Engine,
+Metastore.
+Metastore:
+• Stores metadata about databases, tables, columns, partitions, and file locations.
+• Backed by traditional RDBMS.
+• Used by Compiler for semantic analysis.
+Driver:
+• Manages the life cycle of a Hive query.
+• Receives query, coordinates compilation, optimization and execution.
+• Maintains session and returns results to the client.
+Compiler:
+• Parses HiveQL.
+• Performs semantic analysis (validity of tables/columns, types).
+• Generates logical plan → physical plan (a set of stages, often MapReduce/Tez/Spark
+jobs).
+Execution Engine:
+• Submits the physical plan as jobs to the underlying Hadoop/YARN.
+• Monitors execution, handles failures.
+• Collects results and hands back to the Driver
+
+
+Q1(c)
+What is the CAP Theorem? Explain how it relates to NoSQL database types and name the
+four main types of NoSQL databases.
+Answer:
+CAP Theorem:
+In a distributed system, you can only fully guarantee two of these three:
+• Consistency (C): All nodes see the same data at the same time.
+• Availability (A): Every request receives a non-error response, regardless of node
+failures.
+• Partition Tolerance (P): System continues to function despite network partitions.
+In presence of partitions (P), systems choose between C and A:
+• CP systems: Prefer consistency over availability (e.g., HBase).
+• AP systems: Prefer availability over strong consistency (e.g., Cassandra).
+Relation to NoSQL Types:
+Most NoSQL systems are distributed → must handle P, so they trade between C and A.
+Different NoSQL databases (key–value, column-family, document, graph) pick CAP trade-offs
+based on use case.
+Four Main Types of NoSQL Databases:
+1. Key–Value Stores (e.g., Redis, Riak)
+2. Document Stores (e.g., MongoDB, CouchDB)
+3. Column-Family Stores (e.g., HBase, Cassandra)
+4. Graph Databases (e.g., Neo4j)
+
+
+Q1(d)
+Apache Spark is often described as a unified analytics engine. Explain this statement in
+detail and contrast Spark’s in-memory computation model with Hadoop MapReduce’s
+disk-based processing.
+Answer:
+Unified Analytics Engine – Why:
+• Spark supports multiple workloads on one engine:
+o Batch (Spark Core)
+o SQL (Spark SQL)
+o Streaming (Structured Streaming)
+o ML (MLlib)
+o Graph (GraphX)
+• Uses unified APIs (RDDs, DataFrames, Datasets).
+• Works with various storage systems: HDFS, S3, Kafka, HBase, etc.
+Spark In-Memory vs MapReduce Disk-Based:
+• Spark:
+o Keeps data in memory between transformations (RDD/DataFrame caching).
+o Uses lazy evaluation and builds a DAG for optimization.
+o Ideal for iterative algorithms and interactive analysis.
+o Significantly reduces disk I/O.
+• MapReduce:
+o Each job has fixed map → shuffle → reduce stages.
+o Intermediate results are written to disk (HDFS) after each stage.
+o Higher latency and overhead, especially for multi-step and iterative jobs.
+Result:
+Spark is often 10–100× faster in memory and several times faster than MapReduce on diskheavy workloads.
+
+Q1(a)
+List two primary differences between Hadoop version 2 and Hadoop version 3.
+Answer (any two valid):
+1. Erasure Coding:
+o Hadoop 2: Only replication for fault tolerance (e.g., 3x).
+o Hadoop 3: Introduces erasure coding → same reliability with less storage
+overhead.
+2. Multiple Standby NameNodes:
+o Hadoop 2: Typically 1 active + 1 standby NameNode (limited HA).
+o Hadoop 3: Supports multiple standby NameNodes, improving availability.
+Other acceptable points:
+• YARN improvements (opportunistic containers, etc.).
+• Support for heterogeneous storage (SSD/HDD tiers).
+• MapReduce 2 vs improvements in container reuse & scheduling.
+
+Q1(b)
+What is Hive metastore? Can NoSQL database HBase be configured as Hive metastore?
+(3+1)
+Answer:
+Hive Metastore (3 marks):
+• Central repository holding metadata for Hive:
+o Databases, tables, columns, partitions, data types.
+o Table location in HDFS and statistics.
+• Usually implemented as an RDBMS (e.g., MySQL, Postgres).
+• Allows Hive to treat HDFS files as structured, queryable tables.
+Can HBase be used as Hive Metastore? (1 mark)
+• No. HBase is a NoSQL column-family store, not a relational database.
+• Hive Metastore requires relational features and transactions; hence HBase is not used
+as the metastore backend.
+
+Q1(c)
+Using an example, depict how MapReduce computes word count.
+Answer:
+Goal: Count occurrences of each word in a text corpus.
+Input Example: 2 lines
+• L1: "hello world"
+• L2: "hello hadoop"
+Map Phase:
+Mapper processes each line and emits (word, 1):
+• For L1:
+o ("hello", 1)
+o ("world", 1)
+• For L2:
+o ("hello", 1)
+o ("hadoop", 1)
+Shuffle & Sort Phase:
+• Group by key (word):
+• "hello" → [1, 1]
+• "world" → [1]
+• "hadoop" → [1]
+Reduce Phase:
+Reducer sums the values per key:
+• "hello" → 1 + 1 = 2 → output: ("hello", 2)
+• "world" → 1 → ("world", 1)
+• "hadoop" → 1 → ("hadoop", 1)
+Final Output:
+Plain Text
+hello 2
+world 1
+hadoop 1
+Show more lines
+
+
+Q1(d)
+Draw Spark architecture and explain its various components.
+Answer (description):
+Spark follows a cluster architecture with:
+• Driver Program
+• Cluster Manager (Standalone / YARN / Mesos / Kubernetes)
+• Worker Nodes
+• Executors
+Components:
+1. Driver Program:
+o Runs the main() of the application.
+o Creates SparkContext / SparkSession.
+o Defines transformations and actions on RDDs/DataFrames.
+o Coordinates execution and collects results.
+2. Cluster Manager:
+o Allocates resources for Spark applications.
+o Examples: Standalone, YARN, Mesos, Kubernetes.
+3. Workers (Cluster Nodes):
+o Machines where the tasks actually run.
+o Host executors.
+4. Executors:
+o JVM processes launched on worker nodes.
+o Execute tasks and store data in memory or on disk.
+o One application usually has multiple executors.
+5. Tasks:
+o Small units of work scheduled on executors.
+Spark’s DAG Scheduler splits a job into stages and tasks assigned to executors.
+
+Q1(e)
+What is CAP theorem? Where does MongoDB stand in CAP theorem? (3+1)
+Answer:
+• CAP Theorem (3 marks):
+In a distributed system, you can only guarantee two out of three:
+o Consistency (C)
+o Availability (A)
+o Partition Tolerance (P)
+Under network partition, the system must choose either C or A.
+• MongoDB (1 mark):
+MongoDB is generally considered an AP (Available + Partition Tolerant) system by
+default using replica sets with eventual consistency.
+However, using write concerns/read preferences, it can trade closer to CP for some
+operations. For exam answers: AP is acceptable.
+
+Q1(a)
+Draw Spark architecture and explain its various components. (6 marks)
+(Same conceptual answer as earlier Spark architecture question; can reuse with more detail if
+needed.)
+Answer (summary):
+• Driver Program – Runs application, creates SparkSession, defines
+transformations/actions, communicates with Cluster Manager.
+• Cluster Manager – Allocates resources (Standalone, YARN, Mesos, Kubernetes).
+• Worker Nodes – Machines that run executors.
+• Executors – JVMs on workers; execute tasks and keep data in memory.
+• Tasks – Units of work scheduled on executors.
+• DAG Scheduler – Splits job into stages based on dependencies; Task Scheduler assigns
+tasks to executor
+
+Q1(b)
+List any 4 differences between Data Lake and Data Warehouse. (4 marks)
+Answer (any 4):
+1. Data Type:
+o Data Lake: Stores raw, unstructured, semi-structured, structured.
+o Data Warehouse: Stores processed, structured data.
+2. Schema:
+o Data Lake: Schema-on-read.
+o Data Warehouse: Schema-on-write.
+3. Purpose:
+o Data Lake: For data exploration, ML, big data analytics.
+o Data Warehouse: For BI, reporting, OLAP.
+4. Users:
+o Data Lake: Data scientists, data engineers.
+o Data Warehouse: Business analysts, decision-makers.
+5. Cost & Storage:
+o Data Lake: Cheaper storage; often on distributed storage.
+o Data Warehouse: More expensive, performance-optimized
+
+Q1(c)
+Explain partitioning in Hive with an example. (6 marks)
+Answer:
+• Partitioning: Technique to divide a Hive table into subdirectories based on partition
+column(s).
+• Improves performance by scanning only relevant partitions instead of the entire table.
+Example:
+Partition a sales table by year and month:
+SQL
+CREATE TABLE sales (
+sale_id INT,
+amount DOUBLE,
+item STRING
+)
+PARTITIONED BY (year INT, month INT)
+STORED AS TEXTFILE;
+``
+Show more lines
+Data is stored like:
+• /warehouse/sales/year=2024/month=1/
+• /warehouse/sales/year=2024/month=2/
+Query scanning only year=2024 AND month=1 will read only that partition directory.
+
+Q1(e)
+List any 2 differences between Coalesce and Repartition in Spark. (4 marks)
+Answer:
+1. Shuffling:
+o coalesce() reduces the number of partitions, often without full shuffle (unless
+shuffle=True).
+o repartition() can increase or decrease partitions but always performs a full
+shuffle.
+2. Use Case:
+o coalesce(n) is efficient when reducing partitions (e.g., from 100 to 10).
+o repartition(n) is used when increasing partitions or for more uniform data
+distribution
+
+Q1(a)
+Write a note on Spark RDD and DAG.
+Answer:
+• RDD (Resilient Distributed Dataset):
+o Core data structure in Spark.
+o Immutable, distributed collection of objects partitioned across cluster.
+o Supports transformations (map, filter, reduceByKey) and actions (collect,
+count).
+o Resilient: Can recompute lost partitions using lineage.
+• DAG (Directed Acyclic Graph):
+o When applying transformations on RDDs, Spark builds a DAG of operations.
+o Nodes = RDDs/operations, edges = dependencies.
+o DAG scheduler optimizes execution (grouping stages, minimizing shuffles).
+
+Q1(d)
+Explain MapReduce using PyMongo with suitable code snippet.
+Answer (idea):
+MongoDB supports MapReduce-like operations; in PyMongo you can define map and reduce
+JavaScript functions as strings and call map_reduce on a collection.
+Example (word count on a texts collection):
+Python
+from pymongo import MongoClient
+client = MongoClient("mongodb://localhost:27017/")
+db = client["mydb"]
+coll = db["texts"]
+# Map function (JavaScript)
+map_func = """
+function() {
+var words = this.text.split(" ");
+for (var i = 0; i < words.length; i++) {
+emit(words[i], 1);
+}
+}
+"""
+# Reduce function (JavaScript)
+reduce_func = """
+function(key, values) {
+return Array.sum(values);
+}
+"""
+result = coll.map_reduce(map_func, reduce_func, "word_counts")
+for doc in result.find():
+print(doc["_id"], doc["value"])
+``
+Show more lines
+
+Q1(e)
+How to create bucketing table in Hive, write an example query for it. List the benefits of
+bucketing.
+Answer:
+Example bucketing table:
+SQL
+CREATE TABLE employee_bucketed (
+emp_id INT,
+name STRING,
+dept STRING
+)
+CLUSTERED BY (emp_id) INTO 4 BUCKETS
+STORED AS ORC;
+``
+Show more lines
+Benefits of Bucketing:
+• Enables more efficient sampling.
+• Helps with join optimization (bucketed tables on same key).
+• Provides more evenly distributed data within files.
+• Reduces the amount of data scanned for certain queries
+
+
+
